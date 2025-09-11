@@ -1,0 +1,52 @@
+[
+  {
+    "sas_pattern": "\\\\bsubstr\\\\s*\\\\(\\\\s*([^,]+)\\\\s*,\\\\s*([^,]+)\\\\s*,\\\\s*([^\\\\)]+)\\\\)",
+    "replacement": "substring(\\\\1, (\\\\2)+1, \\\\3)",
+    "notes": "substr -> substring (1-based to 0-based)"
+  },
+  {
+    "sas_pattern": "\\\\bcats\\\\s*\\\\(",
+    "replacement": "concat_ws('', ",
+    "notes": "cats -> concat_ws (no separator)"
+  },
+  {
+    "sas_pattern": "\\\\bcatx\\\\s*\\\\(\\\\s*'([^']*)'\\\\s*,",
+    "replacement": "concat_ws('\\\\1', ",
+    "notes": "catx with delimiter"
+  },
+  {
+    "sas_pattern": "\\\\bcompress\\\\s*\\\\(\\\\s*([^\\\\)]+)\\\\)",
+    "replacement": "regexp_replace(\\\\1, ' ', '')",
+    "notes": "compress spaces"
+  },
+  {
+    "sas_pattern": "\\\\bif\\\\s+missing\\\\s*\\\\(\\\\s*([^)]+)\\\\s*\\\\)\\\\s+then",
+    "replacement": "when(\\\\1.isNull(), ",
+    "notes": "missing() handling - requires manual wrap"
+  },
+  {
+    "sas_pattern": "\\\\bformat\\\\b",
+    "replacement": "# FORMAT - review mapping",
+    "notes": "format requires mapping"
+  },
+  {
+    "sas_pattern": "\\\\bput\\\\s*\\\\(\\\\s*([^,]+)\\\\s*,\\\\s*([^\\\\)]+)\\\\)",
+    "replacement": "date_format(\\\\1, \\\\2)",
+    "notes": "put with format -> date_format mapping (review)"
+  },
+  {
+    "sas_pattern": "\\\\btrim\\\\s*\\\\(",
+    "replacement": "trim(",
+    "notes": "trim"
+  },
+  {
+    "sas_pattern": "\\\\bupcase\\\\s*\\\\(",
+    "replacement": "upper(",
+    "notes": "upcase -> upper"
+  },
+  {
+    "sas_pattern": "\\\\blcase\\\\s*\\\\(",
+    "replacement": "lower(",
+    "notes": "lcase -> lower"
+  }
+]

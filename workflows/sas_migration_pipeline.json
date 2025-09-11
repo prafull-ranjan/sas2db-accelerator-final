@@ -1,0 +1,84 @@
+{
+  "name": "SAS-Migration-Pipeline",
+  "tasks": [
+    {
+      "task_key": "ingest",
+      "notebook_task": {
+        "notebook_path": "/Repos/sas2db-accelerator-final-complete/notebooks/00_ingest_sas_files.py"
+      },
+      "existing_cluster_id": "CLUSTER_ID"
+    },
+    {
+      "task_key": "tokenize",
+      "depends_on": [
+        {
+          "task_key": "ingest"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/sas2db-accelerator-final-complete/notebooks/01_tokenize_ast_parser.py"
+      },
+      "existing_cluster_id": "CLUSTER_ID"
+    },
+    {
+      "task_key": "convert_rules",
+      "depends_on": [
+        {
+          "task_key": "tokenize"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/sas2db-accelerator-final-complete/notebooks/02_rule_based_converter.py"
+      },
+      "existing_cluster_id": "CLUSTER_ID"
+    },
+    {
+      "task_key": "convert_ai",
+      "depends_on": [
+        {
+          "task_key": "convert_rules"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/sas2db-accelerator-final-complete/notebooks/03_ai_assisted_converter.py"
+      },
+      "existing_cluster_id": "CLUSTER_ID"
+    },
+    {
+      "task_key": "validate",
+      "depends_on": [
+        {
+          "task_key": "convert_ai"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/sas2db-accelerator-final-complete/notebooks/04_validation_framework.py"
+      },
+      "existing_cluster_id": "CLUSTER_ID"
+    },
+    {
+      "task_key": "quality",
+      "depends_on": [
+        {
+          "task_key": "validate"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/sas2db-accelerator-final-complete/notebooks/05_code_quality_checks.py"
+      },
+      "existing_cluster_id": "CLUSTER_ID"
+    },
+    {
+      "task_key": "deploy",
+      "depends_on": [
+        {
+          "task_key": "quality"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/sas2db-accelerator-final-complete/notebooks/06_deploy_to_unity_catalog.py"
+      },
+      "existing_cluster_id": "CLUSTER_ID"
+    }
+  ]
+}
