@@ -1,3 +1,6 @@
+%pip install openai
+
+
 # 03_ai_assisted_converter.py
 import time, uuid
 USE_AI = True
