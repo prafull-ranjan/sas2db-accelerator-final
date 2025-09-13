@@ -1,4 +1,4 @@
-%pip install openai
+%pip install openai==0.28
 
 
 # 03_ai_assisted_converter.py
