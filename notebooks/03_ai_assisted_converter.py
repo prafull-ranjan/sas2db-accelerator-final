@@ -2,43 +2,89 @@
 
 
 # 03_ai_assisted_converter.py
+# 03_ai_assisted_converter.py
 import time, uuid
+
+# ========================
+# 🔑 API Key Handling
+# ========================
+OPENAI_KEY = None
+
+# Try Databricks secrets first
+try:
+    OPENAI_KEY = dbutils.secrets.get(scope="llm", key="openai-key")
+except Exception:
+    # If no secret scope (e.g. Community Edition), paste your key inline:
+    OPENAI_KEY = ""  # TODO: replace with your key
+
+# ========================
+# 🧩 OpenAI Client Setup
+# ========================
 USE_AI = True
 try:
-    OPENAI_KEY = dbutils.secrets.get(scope='llm', key='openai-key')
-except Exception:
-    OPENAI_KEY = None
+    from openai import OpenAI
+    client = OpenAI(api_key=OPENAI_KEY)
+except Exception as e:
+    print("⚠️ OpenAI client not available:", e)
     USE_AI = False
 
-if not USE_AI:
-    print('AI disabled (no secret found)')
-
-# Minimal OpenAI call wrapper — adapt to your environment
-def call_openai(prompt):
+# ========================
+# 🚀 Conversion Function
+# ========================
+def call_openai(prompt: str) -> str:
+    if not USE_AI or not OPENAI_KEY:
+        return None
     try:
-        import openai
-        openai.api_key = OPENAI_KEY
-        resp = openai.Completion.create(engine='text-davinci-003', prompt=prompt, max_tokens=1500)
-        return resp.choices[0].text
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",   # change to "gpt-4o" for higher quality
+            messages=[
+                {"role": "system", "content": "You are an expert SAS to PySpark converter. Return only runnable PySpark code."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0
+        )
+        return resp.choices[0].message.content
     except Exception as e:
-        raise
+        print("❌ OpenAI call failed:", e)
+        return None
 
-blocks = spark.table("migration.sas_blocks").filter("status in ('PENDING','REVIEW')").collect()
-prompt_template = """You are an expert translator. Convert the SAS code to production PySpark DataFrame code. Return only Python code that produces a DataFrame named out_df."""
+# ========================
+# 🔄 Conversion Loop
+# ========================
+prompt_template = """Convert the following SAS code into PySpark DataFrame code.
+The output must define a DataFrame called `out_df`.
+
+SAS CODE:
+{code}
+"""
+
+blocks = spark.table("migration.sas_blocks").filter("status IN ('PENDING','REVIEW')").collect()
 
 for b in blocks:
-    if not USE_AI:
-        break
-    if b.complexity not in ('COMPLEX','MEDIUM') and b.status=='REVIEW':
-        continue
-    prompt = prompt_template + "\n\nSAS CODE:\n" + b.code
-    try:
-        converted = call_openai(prompt)
-        if converted and 'out_df' in converted:
-            spark.sql(f"UPDATE migration.sas_blocks SET converted_code = {repr(converted)}, status='CONVERTED', converter_used='AI' WHERE block_id='{b.block_id}'")
-        else:
-            spark.sql(f"UPDATE migration.sas_blocks SET status='REVIEW', converter_used='AI' WHERE block_id='{b.block_id}'")
-    except Exception as e:
-        spark.sql(f"UPDATE migration.sas_blocks SET status='REVIEW', converter_used='AI', error_message={repr(str(e))} WHERE block_id='{b.block_id}'")
-    time.sleep(0.5)
+    prompt = prompt_template.format(code=b.code)
+    converted = call_openai(prompt)
+
+    if converted and "out_df" in converted:
+        # Successful conversion
+        spark.sql(f"""
+            UPDATE migration.sas_blocks
+            SET converted_code = {repr(converted)},
+                status = 'CONVERTED',
+                converter_used = 'AI'
+            WHERE block_id = '{b.block_id}'
+        """)
+    else:
+        # Fallback to review
+        spark.sql(f"""
+            UPDATE migration.sas_blocks
+            SET status = 'REVIEW',
+                converter_used = 'AI',
+                error_message = 'AI unavailable or no valid code produced'
+            WHERE block_id = '{b.block_id}'
+        """)
+
+    time.sleep(0.3)
+
+print("✅ AI-assisted conversion complete (with fallbacks).")
+
 print('AI conversion attempted')
